@@ -1,16 +1,24 @@
 # apel_detection_app
 
-A new Flutter project.
+### Features
+- [x] Capture Camera
+- [x] Person Detection with Yolo Model
+- [x] Dialog detail
 
-## Getting Started
+### Clone Project
+```
+git clone https://github.com/ASNProject/apel_detection_app.git
+```
 
-This project is a starting point for a Flutter application.
+### Run Project
+```
+flutter pub get
+```
+```
+flutter run
+```
 
-A few resources to get you started if this is your first Flutter project:
+### Screenshot<br/>
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+https://github.com/ASNProject/apel_detection_app/assets/49858542/9fb8d98d-5c54-4d80-8e1d-4f3f9ebf57de
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
