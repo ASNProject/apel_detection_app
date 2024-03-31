@@ -15,7 +15,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:apel_detection_app/widgets/info_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_pytorch/flutter_pytorch.dart';
@@ -33,6 +33,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late ModelObjectDetection _objectModel;
+  // ignore: unused_field
   String? _imagePrediction;
   File? _image;
   final ImagePicker _picker = ImagePicker();
@@ -40,6 +41,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<ResultObjectDetection?> objDetect = [];
   bool firststate = false;
   bool message = true;
+  List<ResultObjectDetection?> filteredObjDetect = [];
+  int numberOfPersonsDetected = 0;
 
   @override
   void initState() {
@@ -74,99 +77,146 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
 
-    objDetect = await _objectModel.getImagePrediction(
-        await File(image!.path).readAsBytes(),
-        minimumScore: 0.1,
-        IOUThershold: 0.3);
-    objDetect.forEach((element) {
-      print({
-        "score": element?.score,
-        "className": element?.className,
-        "class": element?.classIndex,
-        "rect": {
-          "left": element?.rect.left,
-          "top": element?.rect.top,
-          "width": element?.rect.width,
-          "height": element?.rect.height,
-          "right": element?.rect.right,
-          "bottom": element?.rect.bottom,
-        },
+    if (image != null) {
+      objDetect = await _objectModel.getImagePrediction(
+          await File(image.path).readAsBytes(),
+          minimumScore: 0.1,
+          IOUThershold: 0.3);
+
+      filteredObjDetect =
+          objDetect.where((obj) => obj?.className == 'peserta').toList();
+
+      numberOfPersonsDetected = filteredObjDetect.length;
+
+      // ignore: avoid_function_literals_in_foreach_calls
+      filteredObjDetect.forEach((element) {
+        // ignore: avoid_print
+        print({
+          "score": element?.score,
+          "className": element?.className,
+          "class": element?.classIndex,
+          "rect": {
+            "left": element?.rect.left,
+            "top": element?.rect.top,
+            "width": element?.rect.width,
+            "height": element?.rect.height,
+            "right": element?.rect.right,
+            "bottom": element?.rect.bottom,
+          },
+        });
       });
-    });
-    scheduleTimeout(5 * 1000);
-    setState(() {
-      _image = File(image.path);
-    });
+
+      scheduleTimeout(5 * 1000);
+      setState(() {
+        _image = File(image.path);
+      });
+    } else {
+      setState(() {
+        message = true;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Gap(16.0),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.lightBlue,
-                borderRadius: BorderRadius.circular(16.0),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(6),
-                child: Text(
-                  'Akademi Angkatan Udara',
-                  style: TextStyle(fontSize: 10, color: Colors.white),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Gap(32.0),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.lightBlue,
+                    borderRadius: BorderRadius.circular(16.0),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.all(6),
+                    child: Text(
+                      'Akademi Angkatan Udara',
+                      style: TextStyle(fontSize: 10, color: Colors.white),
+                    ),
+                  ),
                 ),
-              ),
+                const Gap(4),
+                Text(
+                  'Realtime Apel Taruna',
+                  style: GoogleFonts.poppins(
+                      fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const Gap(4),
+                Text(
+                  'Deteksi jumlah peserta apel Taruna AAU secara realtime menggunakan metode YOLO',
+                  style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
+                ),
+              ],
             ),
-            const Gap(4),
-            Text(
-              'Realtime Apel Taruna',
-              style: GoogleFonts.poppins(
-                  fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const Gap(4),
-            Text(
-              'Deteksi jumlah peserta apel Taruna AAU secara realtime menggunakan metode YOLO',
-              style: GoogleFonts.inter(fontSize: 10, color: Colors.grey),
-            ),
-            const Gap(16.0),
+            const Gap(16),
             Expanded(
               child: Stack(
                 children: [
                   !firststate
                       ? !message
-                          ? const CircularProgressIndicator()
+                          ? const Center(child: CircularProgressIndicator())
                           : ClipRRect(
                               borderRadius: BorderRadius.circular(8.0),
-                              child: CachedNetworkImage(
-                                  width: MediaQuery.of(context).size.width,
-                                  height: MediaQuery.of(context).size.height,
-                                  fit: BoxFit.cover,
-                                  imageUrl:
-                                      "https://picsum.photos/id/1/200/300"),
+                              child: Image.asset(
+                                'assets/images/37294.jpg',
+                                width: MediaQuery.of(context).size.width,
+                                height: MediaQuery.of(context).size.height,
+                                fit: BoxFit.cover,
+                              ),
                             )
-                      : Container(
+                      : ClipRRect(
+                          borderRadius: BorderRadius.circular(8.0),
                           child: _objectModel.renderBoxesOnImage(
-                              _image!, objDetect)),
-                  const Positioned(
+                              _image!, filteredObjDetect)),
+                  Positioned(
                     bottom: 8,
                     right: 8,
-                    child: Icon(
-                      Icons.info_rounded,
-                      color: Colors.white,
-                      size: 32,
+                    child: InkWell(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Dialog(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: InfoWidget(
+                                filteredObjDetect: filteredObjDetect,
+                                numberOfObjectDetection:
+                                    numberOfPersonsDetected,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      child: const Icon(
+                        Icons.info_rounded,
+                        color: Colors.white,
+                        size: 32,
+                      ),
                     ),
                   ),
                   Positioned(
                     bottom: 8,
                     left: 8,
-                    child: Text(
-                      'Jumlah Peserta: 100',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
+                    child: Container(
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Text(
+                          'Jumlah Peserta: $numberOfPersonsDetected',
+                          style: GoogleFonts.poppins(
+                              color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
                       ),
                     ),
                   )
@@ -177,6 +227,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             InkWell(
               onTap: () {
                 runObjectDetection();
+                numberOfPersonsDetected = 0;
               },
               child: const Center(
                 child: Icon(

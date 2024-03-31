@@ -1,4 +1,4 @@
-person
+peserta
 bicycle
 car
 motorcycle
